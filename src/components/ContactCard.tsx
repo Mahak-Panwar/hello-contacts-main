@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Mail, Phone, MapPin } from "lucide-react";
 
 interface Contact {
-  id: string;
+  uuid: string;
   name: string;
   email: string;
   phone: string;
@@ -13,10 +13,17 @@ interface Contact {
 }
 
 interface ContactCardProps {
-  contact: Contact;
+  contact: {
+    uuid: string;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+  };
   onEdit: (contact: Contact) => void;
-  onDelete: (id: string) => void;
+  onDelete: () => void;
 }
+
 
 export const ContactCard = ({ contact, onEdit, onDelete }: ContactCardProps) => {
   const initials = contact.name
@@ -73,7 +80,7 @@ export const ContactCard = ({ contact, onEdit, onDelete }: ContactCardProps) => 
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onDelete(contact.id)}
+              onClick={() => onDelete()}
               className="hover:bg-destructive hover:text-destructive-foreground"
             >
               <Trash2 className="w-4 h-4" />

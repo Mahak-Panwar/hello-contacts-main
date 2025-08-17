@@ -16,18 +16,7 @@ const app = express();
 // Enable CORS to allow frontend (if needed for dev)
 // configure origins accordingly in production
 app.use(
-  cors({
-    origin: "http://localhost:3000", // tumhara frontend origin
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "Origin",
-      "X-Requested-With",
-      "Accept",
-    ],
-    credentials: false, // agar cookies bhejni hain to true
-  })
+  cors()
 );
 
 

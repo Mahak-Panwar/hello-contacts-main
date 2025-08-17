@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ContactCard } from "@/components/ContactCard";
-import { ContactForm } from "@/components/ContactForm";
+import { ContactForm  }from "@/components/ContactForm";
 import { SearchBar } from "@/components/SearchBar";
 import { Plus, Users, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import API from "@/lib/config"; // Axios instance with baseURL and token
-
+import { v4 as uuidv4 } from 'uuid';
 interface Contact {
-  id: string;
+  uuid: string;
   name: string;
   email: string;
   phone: string;
@@ -30,7 +30,7 @@ export const ContactManager = () => {
 
     const fetchContacts = async () => {
       try {
-        const res = await API.get("/contacts");
+        const res = await API.get(`/contacts/`);
         if (isMounted.current) setContacts(res.data);
       } catch (error) {
         toast({
@@ -62,48 +62,55 @@ export const ContactManager = () => {
   });
 
   const refreshContacts = async () => {
-    const res = await API.get("/contacts");
+    const res = await API.get(`/contacts/`);
     setContacts(res.data);
   };
 
-  const handleSaveContact = async (contactData: Omit<Contact, "id">) => {
-     console.log("Parent function reached, mode:", editingContact ? "EDIT" : "ADD");
-    try {
-      if (editingContact) {
-        await API.put(`/contacts/${editingContact.id}`, contactData);
-        toast({
-          title: "Contact updated",
-          description: `${contactData.name} has been updated.`,
-        });
-      } else {
-        await API.post("/contacts", contactData);
-        toast({
-          title: "Contact added",
-          description: `${contactData.name} has been added.`,
-        });
-      }
+  const handleSaveContact = async (contactData: Omit<Contact, "uuid">) => {
+  console.log("Parent function reached, mode:", editingContact ? "EDIT" : "ADD");
 
-      await refreshContacts();
-      setIsFormOpen(false);
-      setEditingContact(undefined);
-    } catch (error) {
+  try {
+    if (editingContact) {
+      await API.put(`/contacts/${editingContact.uuid}`, contactData);
       toast({
-        title: "Error",
-        description: "Failed to save contact",
-        variant: "destructive",
+        title: "Contact updated",
+        description: `${contactData.name} has been updated.`,
       });
-      console.error(error);
+    } else {
+      const newContact = {
+        uuid: uuidv4(), // ✅ Generate UUID
+        ...contactData,
+      };
+
+      await API.post(`/contacts/`, newContact);
+      toast({
+        title: "Contact added",
+        description: `${contactData.name} has been added.`,
+      });
     }
-  };
+
+    await refreshContacts();
+    setIsFormOpen(false);
+    setEditingContact(undefined);
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to save contact",
+      variant: "destructive",
+    });
+    console.error(error);
+  }
+};
+
 
   const handleEditContact = (contact: Contact) => {
     setEditingContact(contact);
     setIsFormOpen(true);
   };
 
-  const handleDeleteContact = async (id: string) => {
+  const handleDeleteContact = async (uuid: string) => {
     try {
-      await API.delete(`/contacts/${id}`);
+      await API.delete(`/contacts/${uuid}`);
       toast({
         title: "Contact deleted",
         description: "Contact has been removed.",
@@ -186,8 +193,10 @@ export const ContactManager = () => {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredContacts.map((contact, index) => (
-                <div key={contact.id} style={{ animationDelay: `${index * 0.1}s` }}>
-                  <ContactCard contact={contact} onEdit={handleEditContact} onDelete={handleDeleteContact} />
+                <div key={contact.uuid} style={{ animationDelay: `${index * 0.1}s` }}>
+                  <ContactCard contact={contact}
+  onEdit={handleEditContact}
+  onDelete={() => handleDeleteContact(contact.uuid)}  />
                 </div>
               ))}
             </div>

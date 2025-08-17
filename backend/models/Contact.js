@@ -1,10 +1,17 @@
 const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
 
 const contactSchema = mongoose.Schema(
   {
+    uuid: {
+      type: String,
+      required: true , // ✅ auto-generate UUID
+      unique: true,
+    },
+
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
+      required: false,
       ref: 'User', // Link contacts to user accounts
     },
     name: {
