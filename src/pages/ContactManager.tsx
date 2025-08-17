@@ -1,12 +1,11 @@
-import { useState , useEffect} from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ContactCard } from "@/components/ContactCard";
 import { ContactForm } from "@/components/ContactForm";
 import { SearchBar } from "@/components/SearchBar";
 import { Plus, Users, Heart } from "lucide-react";
-import { toast, useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import API from "@/lib/config"; // Axios instance with baseURL and token
-
 
 interface Contact {
   id: string;
@@ -16,85 +15,113 @@ interface Contact {
   address: string;
 }
 
-// Sample data for demonstration
-
-
-
 export const ContactManager = () => {
-const [contacts, setContacts] = useState<Contact[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | undefined>();
+  const [loading, setLoading] = useState(true);
+  const isMounted = useRef(true);
+
   const { toast } = useToast();
 
-const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    isMounted.current = true;
 
-useEffect(() => {
-  const fetchContacts = async () => {
-    try {
-      const res = await API.get("/contacts");
-      setContacts(res.data);
-    } catch (error) {
-     toast({ title: "Error", description: "Failed to load contacts", variant: "destructive" });
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchContacts = async () => {
+      try {
+        const res = await API.get("/contacts");
+        if (isMounted.current) setContacts(res.data);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load contacts",
+          variant: "destructive",
+        });
+        console.error(error);
+      } finally {
+        if (isMounted.current) setLoading(false);
+      }
+    };
 
-  fetchContacts();
-}, []);
+    fetchContacts();
 
-  const filteredContacts = contacts.filter(contact =>
-    contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.phone.includes(searchTerm)
-  );
+    // Avoid state updates on unmount and double-invoke in StrictMode
+    return () => {
+      isMounted.current = false;
+    };
+  }, [toast]);
 
-  const handleSaveContact = async (contactData: Omit<Contact, 'id'>) => {
-  try {
-    if (editingContact) {
-      // Update contact
-      await API.put(`/contacts/${editingContact.id}`, contactData);
-      toast({ title: "Contact Updated", description: `${contactData.name} has been updated.` });
-    } else {
-      // Create contact
-      await API.post("/contacts", contactData);
-      toast({ title: "Contact Added", description: `${contactData.name} has been added.` });
-    }
+  const filteredContacts = contacts.filter((contact) => {
+    const q = searchTerm.toLowerCase();
+    return (
+      contact.name.toLowerCase().includes(q) ||
+      contact.email.toLowerCase().includes(q) ||
+      contact.phone.includes(searchTerm)
+    );
+  });
 
-    // Refresh contacts
+  const refreshContacts = async () => {
     const res = await API.get("/contacts");
     setContacts(res.data);
-    setIsFormOpen(false);
-    setEditingContact(undefined);
-  } catch (error) {
-    toast({ title: "Error", description: "Failed to save contact", variant: "destructive" });
-    console.error(error);
-  }
-};
+  };
+
+  const handleSaveContact = async (contactData: Omit<Contact, "id">) => {
+     console.log("Parent function reached, mode:", editingContact ? "EDIT" : "ADD");
+    try {
+      if (editingContact) {
+        await API.put(`/contacts/${editingContact.id}`, contactData);
+        toast({
+          title: "Contact updated",
+          description: `${contactData.name} has been updated.`,
+        });
+      } else {
+        await API.post("/contacts", contactData);
+        toast({
+          title: "Contact added",
+          description: `${contactData.name} has been added.`,
+        });
+      }
+
+      await refreshContacts();
+      setIsFormOpen(false);
+      setEditingContact(undefined);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save contact",
+        variant: "destructive",
+      });
+      console.error(error);
+    }
+  };
 
   const handleEditContact = (contact: Contact) => {
     setEditingContact(contact);
     setIsFormOpen(true);
   };
 
-const handleDeleteContact = async (id: string) => {
-  try {
-    await API.delete(`/contacts/${id}`);
-    toast({ title: "Contact Deleted", description: "Contact has been removed.", variant: "destructive" });
-
-    // Refresh contacts
-    const res = await API.get("/contacts");
-    setContacts(res.data);
-  } catch (error) {
-    toast({ title: "Error", description: "Failed to delete contact", variant: "destructive" });
-    console.error(error);
-  }
-};
+  const handleDeleteContact = async (id: string) => {
+    try {
+      await API.delete(`/contacts/${id}`);
+      toast({
+        title: "Contact deleted",
+        description: "Contact has been removed.",
+        variant: "destructive",
+      });
+      await refreshContacts();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete contact",
+        variant: "destructive",
+      });
+      console.error(error);
+    }
+  };
 
   const handleAddNew = () => {
-    setEditingContact(undefined);
+    setEditingContact(undefined); // ensures POST path
     setIsFormOpen(true);
   };
 
@@ -124,18 +151,9 @@ const handleDeleteContact = async (id: string) => {
         {/* Search and Add Button */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8 animate-fade-in">
           <div className="flex-1">
-            <SearchBar
-              value={searchTerm}
-              onChange={setSearchTerm}
-              placeholder="Search by name, email, or phone..."
-            />
+            <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name, email, or phone..." />
           </div>
-          <Button
-            onClick={handleAddNew}
-            variant="warm"
-            size="lg"
-            className="whitespace-nowrap"
-          >
+          <Button onClick={handleAddNew} variant="warm" size="lg" className="whitespace-nowrap">
             <Plus className="w-4 h-4 mr-2" />
             Add Contact
           </Button>
@@ -143,19 +161,20 @@ const handleDeleteContact = async (id: string) => {
 
         {/* Contacts Grid */}
         <div className="space-y-6">
-          {filteredContacts.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12 animate-fade-in text-muted-foreground">Loading contacts…</div>
+          ) : filteredContacts.length === 0 ? (
             <div className="text-center py-12 animate-fade-in">
               <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                 <Users className="w-10 h-10 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-2">
-                {searchTerm ? 'No contacts found' : 'No contacts yet'}
+                {searchTerm ? "No contacts found" : "No contacts yet"}
               </h3>
               <p className="text-muted-foreground mb-6">
                 {searchTerm
                   ? `No contacts match "${searchTerm}". Try a different search term.`
-                  : 'Start building your contact list by adding your first contact.'
-                }
+                  : "Start building your contact list by adding your first contact."}
               </p>
               {!searchTerm && (
                 <Button onClick={handleAddNew} variant="warm">
@@ -167,41 +186,32 @@ const handleDeleteContact = async (id: string) => {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredContacts.map((contact, index) => (
-                <div
-                  key={contact.id}
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <ContactCard
-                    contact={contact}
-                    onEdit={handleEditContact}
-                    onDelete={handleDeleteContact}
-                  />
+                <div key={contact.id} style={{ animationDelay: `${index * 0.1}s` }}>
+                  <ContactCard contact={contact} onEdit={handleEditContact} onDelete={handleDeleteContact} />
                 </div>
               ))}
-            </div> 
+            </div>
           )}
         </div>
 
         {/* Contact Count */}
-        {filteredContacts.length > 0 && (
+        {filteredContacts.length > 0 && !loading && (
           <div className="mt-8 text-center text-muted-foreground animate-fade-in">
             {searchTerm ? (
-              <p>Showing {filteredContacts.length} of {contacts.length} contacts</p>
+              <p>
+                Showing {filteredContacts.length} of {contacts.length} contacts
+              </p>
             ) : (
-              <p>{contacts.length} contact{contacts.length !== 1 ? 's' : ''} in your directory</p>
+              <p>
+                {contacts.length} contact{contacts.length !== 1 ? "s" : ""} in your directory
+              </p>
             )}
           </div>
         )}
       </div>
 
       {/* Contact Form Modal */}
-      {isFormOpen && (
-        <ContactForm
-          contact={editingContact}
-          onSave={handleSaveContact}
-          onCancel={handleCloseForm}
-        />
-      )}
+      {isFormOpen && <ContactForm contact={editingContact} onSave={handleSaveContact} onCancel={handleCloseForm} />}
     </div>
   );
 };

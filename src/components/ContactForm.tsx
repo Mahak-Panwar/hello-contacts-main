@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,30 +16,42 @@ interface Contact {
 
 interface ContactFormProps {
   contact?: Contact;
-  onSave: (contact: Omit<Contact, 'id'>) => void;
+  onSave: (contact: Omit<Contact, "id">) => void;
   onCancel: () => void;
 }
 
 export const ContactForm = ({ contact, onSave, onCancel }: ContactFormProps) => {
   const [formData, setFormData] = useState({
-    name: contact?.name || '',
-    email: contact?.email || '',
-    phone: contact?.phone || '',
-    address: contact?.address || ''
+    name: contact?.name || "",
+    email: contact?.email || "",
+    phone: contact?.phone || "",
+    address: contact?.address || "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (formData.name.trim()) {
-      onSave(formData);
-    }
-  };
+  // Sync when contact changes (Edit vs Add)
+  useEffect(() => {
+    setFormData({
+      name: contact?.name || "",
+      email: contact?.email || "",
+      phone: contact?.phone || "",
+      address: contact?.address || "",
+    });
+  }, [contact]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+ const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  console.log("Form submit triggered");  // ✅ Step 1
+  if (formData.name.trim()) {
+    console.log("Calling onSave with:", formData);  // ✅ Step 2
+    onSave(formData);
+  }
+};
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -47,17 +59,19 @@ export const ContactForm = ({ contact, onSave, onCancel }: ContactFormProps) => 
       <Card className="w-full max-w-md animate-scale-in shadow-medium">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="text-xl font-semibold">
-            {contact ? 'Edit Contact' : 'Add New Contact'}
+            {contact ? "Edit Contact" : "Add New Contact"}
           </CardTitle>
           <Button
             variant="ghost"
             size="sm"
             onClick={onCancel}
             className="h-8 w-8 p-0"
+            aria-label="Close"
           >
             <X className="w-4 h-4" />
           </Button>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -72,7 +86,7 @@ export const ContactForm = ({ contact, onSave, onCancel }: ContactFormProps) => 
                 className="focus:ring-primary"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -85,7 +99,7 @@ export const ContactForm = ({ contact, onSave, onCancel }: ContactFormProps) => 
                 className="focus:ring-primary"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
               <Input
@@ -98,7 +112,7 @@ export const ContactForm = ({ contact, onSave, onCancel }: ContactFormProps) => 
                 className="focus:ring-primary"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="address">Address</Label>
               <Textarea
@@ -111,22 +125,13 @@ export const ContactForm = ({ contact, onSave, onCancel }: ContactFormProps) => 
                 rows={3}
               />
             </div>
-            
+
             <div className="flex space-x-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onCancel}
-                className="flex-1"
-              >
+              <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                variant="warm"
-                className="flex-1"
-              >
-                {contact ? 'Update' : 'Save'} Contact
+              <Button type="submit" variant="warm" className="flex-1" > 
+                {contact ? "Update" : "Save"} Contact
               </Button>
             </div>
           </form>

@@ -17,21 +17,30 @@ const app = express();
 // configure origins accordingly in production
 app.use(
   cors({
-    origin: 'http://localhost:3000', // React app origin for development
-    credentials: true,
+    origin: "http://localhost:3000", // tumhara frontend origin
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Origin",
+      "X-Requested-With",
+      "Accept",
+    ],
+    credentials: false, // agar cookies bhejni hain to true
   })
 );
 
+
 // Body parser - parse JSON requests
 app.use(express.json());
-
+app.use(express.urlencoded({ extended: true }));
 // Routes
-app.use('/api/auth', require('./routes/authRoutes'));
+// app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/contacts', require('./routes/contactRoutes'));
 
 // Serve frontend static files (assuming React build in /frontend/build)
 if (process.env.NODE_ENV === 'production') {
-  const frontendBuildPath = path.join(__dirname, '../frontend/build');
+  const frontendBuildPath = path.join(__dirname, 'build');
   app.use(express.static(frontendBuildPath));
 
   app.get('*', (req, res) =>

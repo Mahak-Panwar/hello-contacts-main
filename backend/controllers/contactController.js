@@ -32,6 +32,7 @@ const getContact = asyncHandler(async (req, res) => {
 // @desc    Create new contact
 // @route   POST /api/contacts
 // @access  Private
+
 const createContact = asyncHandler(async (req, res) => {
   const { name, email, phone, address } = req.body;
 
@@ -47,7 +48,8 @@ const createContact = asyncHandler(async (req, res) => {
     phone,
     address,
   });
-
+ console.log("BODY:", req.body);
+console.log("USER:", req.user);
   const createdContact = await contact.save();
   res.status(201).json(createdContact);
 });

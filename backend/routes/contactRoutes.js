@@ -9,14 +9,21 @@ const {
     updateContact,
     deleteContact,
 } = require('../controllers/contactController');
-const { protect } = require('../middleware/authMiddleware');
+// const { protect } = require('../middleware/authMiddleware');
 
-router.route('/').get(protect, getContacts).post(protect, createContact);
+// router.route('/').get(protect, getContacts).post(protect, createContact);
+// router
+//     .route('/:id')
+//     .get(protect, getContact)
+//     .put(protect, updateContact)
+//     .delete(protect, deleteContact);
+
+    router.route('/').get( getContacts).post(createContact);
 router
     .route('/:id')
-    .get(protect, getContact)
-    .put(protect, updateContact)
-    .delete(protect, deleteContact);
+    .get( getContact)
+    .put(updateContact)
+    .delete(deleteContact);
 
 // router.post('/', validateContact, createContact);
 

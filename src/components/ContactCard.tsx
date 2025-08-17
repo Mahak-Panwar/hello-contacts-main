@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge"; // removed (unused)
 import { Edit, Trash2, Mail, Phone, MapPin } from "lucide-react";
 
 interface Contact {
@@ -20,10 +20,11 @@ interface ContactCardProps {
 
 export const ContactCard = ({ contact, onEdit, onDelete }: ContactCardProps) => {
   const initials = contact.name
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
+    .trim()
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0]?.toUpperCase() ?? "")
+    .join("")
     .slice(0, 2);
 
   return (
@@ -32,8 +33,9 @@ export const ContactCard = ({ contact, onEdit, onDelete }: ContactCardProps) => 
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-full bg-gradient-warm flex items-center justify-center text-primary-foreground font-semibold text-lg">
-              {initials}
+              {initials || "?"}
             </div>
+
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-card-foreground">{contact.name}</h3>
               <div className="space-y-1 mt-2">
@@ -58,6 +60,7 @@ export const ContactCard = ({ contact, onEdit, onDelete }: ContactCardProps) => 
               </div>
             </div>
           </div>
+
           <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-smooth">
             <Button
               variant="ghost"
